@@ -24,13 +24,24 @@ resource "azurerm_linux_function_app" "main" {
   }
 
   app_settings = {
-    "FUNCTIONS_WORKER_RUNTIME"                 = "python"
-    "AzureWebJobsStorage"                      = var.storage_account_main_primary_connection_string
-    "COMMUNICATION_SERVICES_CONNECTION_STRING" = var.communication_service_main_primary_connection_string
+    "FUNCTIONS_WORKER_RUNTIME"                   = "python"
+    "AzureWebJobsStorage"                        = var.storage_account_main_primary_connection_string
+    "COMMUNICATION_SERVICES_CONNECTION_STRING"   = var.communication_service_main_primary_connection_string
+    "APPINSIGHTS_INSTRUMENTATIONKEY"             = azurerm_application_insights.function_insights.instrumentation_key
+    "APPLICATIONINSIGHTS_CONNECTION_STRING"      = azurerm_application_insights.function_insights.connection_string
+    "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
   }
 
   # ZIPファイルからのデプロイ
   zip_deploy_file = data.archive_file.function_payload.output_path
+}
+
+# Application Insightsリソースの作成
+resource "azurerm_application_insights" "function_insights" {
+  name                = "notification-function-insights-${random_string.storage_account_name.result}"
+  location            = var.resource_group.location
+  resource_group_name = var.resource_group.name
+  application_type    = "web"
 }
 
 data "archive_file" "function_payload" {
