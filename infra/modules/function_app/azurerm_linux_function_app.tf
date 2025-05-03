@@ -18,4 +18,13 @@ resource "azurerm_linux_function_app" "example" {
     "AzureWebJobsStorage"                      = azurerm_storage_account.example.primary_connection_string
     "COMMUNICATION_SERVICES_CONNECTION_STRING" = azurerm_communication_service.example.primary_connection_string
   }
+
+  # ZIPファイルからのデプロイ
+  zip_deploy_file = data.archive_file.function_payload.output_path
+}
+
+data "archive_file" "function_payload" {
+  type        = "zip"
+  source_dir  = "${path.module}/src/in"
+  output_path = "${path.module}/src/out/lambda_function_payload.zip"
 }
