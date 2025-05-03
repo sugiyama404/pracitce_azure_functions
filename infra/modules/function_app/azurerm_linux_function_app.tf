@@ -1,6 +1,6 @@
 # Function App
 resource "azurerm_linux_function_app" "main" {
-  name                       = "notification-function"
+  name                       = "notification-function-${random_string.storage_account_name.result}"
   location                   = var.resource_group.location
   resource_group_name        = var.resource_group.name
   service_plan_id            = azurerm_service_plan.main.id
@@ -27,4 +27,10 @@ data "archive_file" "function_payload" {
   type        = "zip"
   source_dir  = "${path.module}/src/in"
   output_path = "${path.module}/src/out/function_payload.zip"
+}
+
+resource "random_string" "storage_account_name" {
+  length  = 5
+  special = false
+  upper   = false
 }
