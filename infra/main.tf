@@ -34,12 +34,14 @@ module "resource_providers" {
 module "storage" {
   source         = "./modules/azurerm_storage"
   resource_group = azurerm_resource_group.resource_group
+  depends_on     = [module.resource_providers]
 }
 
 # Communication Service
 module "communication_service" {
   source         = "./modules/communication_service"
   resource_group = azurerm_resource_group.resource_group
+  depends_on     = [module.resource_providers]
 }
 
 # Function App
@@ -50,4 +52,5 @@ module "function_app" {
   storage_main_account_access_key                      = module.storage.storage_main_account_access_key
   storage_account_main_primary_connection_string       = module.storage.storage_account_main_primary_connection_string
   communication_service_main_primary_connection_string = module.communication_service.communication_service_main_primary_connection_string
+  depends_on                                           = [module.resource_providers]
 }
