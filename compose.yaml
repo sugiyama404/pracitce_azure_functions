@@ -1,0 +1,11 @@
+version: '3'
+
+services:
+  apserver:
+    build:
+      context: ./apserver
+      dockerfile: Dockerfile
+    volumes:
+      - ./apserver:/app
+    tty: true
+    command: python main.py
