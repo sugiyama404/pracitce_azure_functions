@@ -15,8 +15,46 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('HTTP通知トリガー関数が実行されました')
 
     try:
-        # リクエストデータの取得
-        req_body = req.get_json()
+        # Content-Typeの確認
+        content_type = req.headers.get('Content-Type', '')
+        if 'application/json' not in content_type and req.method == 'POST':
+            logging.warning(f"不正なContent-Type: {content_type}")
+            return func.HttpResponse(
+                json.dumps({"error": "Content-Typeはapplication/jsonである必要があります"}),
+                status_code=415,
+                mimetype="application/json"
+            )
+
+        # リクエストボディの取得
+        req_body_raw = req.get_body()
+
+        # リクエストボディがあるか確認
+        if not req_body_raw:
+            return func.HttpResponse(
+                json.dumps({"error": "リクエストボディが必要です"}),
+                status_code=400,
+                mimetype="application/json"
+            )
+
+        # JSONデータのパース
+        try:
+            req_body_str = req_body_raw.decode("utf-8")
+            logging.info(f"受信したリクエストボディ: {req_body_str}")
+            req_body = json.loads(req_body_str)
+        except UnicodeDecodeError as e:
+            logging.error(f"UTF-8デコードエラー: {str(e)}")
+            return func.HttpResponse(
+                json.dumps({"error": "リクエストボディはUTF-8エンコードされている必要があります"}),
+                status_code=400,
+                mimetype="application/json"
+            )
+        except ValueError as e:
+            logging.error(f"JSON解析エラー: {str(e)}, ボディ: {req_body_raw}")
+            return func.HttpResponse(
+                json.dumps({"error": "リクエストボディは有効なJSON形式である必要があります"}),
+                status_code=400,
+                mimetype="application/json"
+            )
 
         # 必須パラメータの検証
         to_email = req_body.get('to_email')
@@ -70,15 +108,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
                 "message_id": message_id
             }),
             status_code=200,
-            mimetype="application/json"
-        )
-
-    except ValueError as ve:
-        # JSONパース失敗などのエラー
-        logging.error(f"リクエスト処理エラー: {str(ve)}")
-        return func.HttpResponse(
-            json.dumps({"error": f"無効なリクエスト形式: {str(ve)}"}),
-            status_code=400,
             mimetype="application/json"
         )
 
