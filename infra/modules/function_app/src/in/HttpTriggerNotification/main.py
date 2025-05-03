@@ -46,16 +46,6 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
             }
         }
 
-        # CC受信者がある場合
-        cc_recipients = req_body.get('cc', [])
-        if cc_recipients:
-            email_message["recipients"]["cc"] = [{"address": addr} for addr in cc_recipients]
-
-        # BCC受信者がある場合
-        bcc_recipients = req_body.get('bcc', [])
-        if bcc_recipients:
-            email_message["recipients"]["bcc"] = [{"address": addr} for addr in bcc_recipients]
-
         # メール送信を開始（非同期操作）
         poller = client.begin_send(email_message)
 
