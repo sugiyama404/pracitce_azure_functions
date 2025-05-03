@@ -43,6 +43,12 @@ resource "azurerm_application_insights" "function_insights" {
   location            = var.resource_group.location
   resource_group_name = var.resource_group.name
   application_type    = "web"
+
+  # If workspace_id is provided, use it; otherwise it will remain as configured in existing deployments
+  workspace_id = var.log_analytics_workspace_id
+
+  # Setting this to avoid automatic migration issues
+  disable_ip_masking = false
 }
 
 data "archive_file" "function_payload" {
