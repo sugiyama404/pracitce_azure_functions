@@ -8,8 +8,9 @@ resource "azurerm_linux_function_app" "main" {
   storage_account_access_key = var.storage_main_account_access_key
 
   site_config {
+    always_on = true
     application_stack {
-      python_version = "3.10"
+      python_version = "3.12"
     }
     # CORSの設定
     cors {
