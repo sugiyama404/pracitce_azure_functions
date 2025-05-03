@@ -1,6 +1,6 @@
 # ストレージアカウント
 resource "azurerm_storage_account" "main" {
-  name                     = "notificationfuncstorage${random_string.storage_account_name.result}"
+  name                     = "notifystorage${random_string.storage_account_name.result}"
   location                 = var.resource_group.location
   resource_group_name      = var.resource_group.name
   account_tier             = "Standard"

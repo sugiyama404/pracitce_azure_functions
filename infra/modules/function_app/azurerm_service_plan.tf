@@ -1,4 +1,4 @@
-resource "azurerm_service_plan" "example" {
+resource "azurerm_service_plan" "main" {
   name                = "notification-func-service-plan"
   location            = var.resource_group.location
   resource_group_name = var.resource_group.name

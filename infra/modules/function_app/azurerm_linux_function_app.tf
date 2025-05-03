@@ -1,9 +1,9 @@
 # Function App
-resource "azurerm_linux_function_app" "example" {
+resource "azurerm_linux_function_app" "main" {
   name                       = "notification-function"
   location                   = var.resource_group.location
   resource_group_name        = var.resource_group.name
-  service_plan_id            = azurerm_service_plan.example.id
+  service_plan_id            = azurerm_service_plan.main.id
   storage_account_name       = var.storage_main_account_name
   storage_account_access_key = var.storage_main_account_access_key
 
