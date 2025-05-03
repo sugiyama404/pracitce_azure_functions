@@ -9,7 +9,17 @@ resource "azurerm_linux_function_app" "main" {
 
   site_config {
     application_stack {
-      python_version = "3.9"
+      python_version = "3.10"
+    }
+    # CORSの設定
+    cors {
+      allowed_origins = [
+        "https://portal.azure.com",
+        "https://functions.azure.com",
+        "https://functions-staging.azure.com",
+        "https://functions-next.azure.com"
+      ]
+      support_credentials = true
     }
   }
 
