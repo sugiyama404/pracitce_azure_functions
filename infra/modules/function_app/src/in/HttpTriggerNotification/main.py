@@ -2,12 +2,15 @@ import logging
 import azure.functions as func
 import os
 import json
-from azure.communication.email import EmailClient
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+from email.utils import formataddr
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     """
     Azure Functionsのトリガーから通知サービスを実行するエントリーポイント
-    HTTP POSTリクエストを受け取り、Azure Communication Servicesを使用して通知を送信
+    HTTP POSTリクエストを受け取り、標準ライブラリを使用して通知を送信
     """
     logging.info('HTTP通知トリガー関数が実行されました')
 
@@ -29,35 +32,42 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         message = req_body.get('message', 'これは自動通知メッセージです。')
         sender = req_body.get('sender', 'DoNotReply@yourdomain.com')
 
-        # Azure Communication Servicesのクライアント初期化
-        connection_string = os.environ["COMMUNICATION_SERVICES_CONNECTION_STRING"]
-        client = EmailClient.from_connection_string(connection_string)
+        # SMTPサーバー設定を環境変数から取得
+        smtp_server = os.environ.get("SMTP_SERVER", "smtp.example.com")
+        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
+        smtp_username = os.environ.get("SMTP_USERNAME", "")
+        smtp_password = os.environ.get("SMTP_PASSWORD", "")
 
-        # メール送信リクエストの作成
-        email_message = {
-            "senderAddress": sender,
-            "recipients": {
-                "to": [{"address": to_email}]
-            },
-            "content": {
-                "subject": subject,
-                "plainText": message,
-                "html": f"<html><body><h1>{subject}</h1><p>{message}</p></body></html>"
-            }
-        }
+        # メールメッセージの作成
+        email_message = MIMEMultipart("alternative")
+        email_message["Subject"] = subject
+        email_message["From"] = formataddr(("Notification Service", sender))
+        email_message["To"] = to_email
 
-        # メール送信を開始（非同期操作）
-        poller = client.begin_send(email_message)
+        # プレーンテキスト版
+        plain_part = MIMEText(message, "plain")
+        email_message.attach(plain_part)
 
-        # 操作完了を待ち、結果を取得
-        result = poller.result()
+        # HTML版
+        html_content = f"<html><body><h1>{subject}</h1><p>{message}</p></body></html>"
+        html_part = MIMEText(html_content, "html")
+        email_message.attach(html_part)
+
+        # SMTPサーバーに接続してメール送信
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.ehlo()
+            server.starttls()  # Transport Layer Security
+            server.login(smtp_username, smtp_password)
+            server.send_message(email_message)
+
+        message_id = email_message.get("Message-ID", "unknown")
 
         # 成功レスポンスを返す
         return func.HttpResponse(
             json.dumps({
                 "status": "success",
                 "message": "メールが正常に送信されました",
-                "message_id": result.message_id
+                "message_id": message_id
             }),
             status_code=200,
             mimetype="application/json"

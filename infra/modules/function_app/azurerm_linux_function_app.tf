@@ -33,7 +33,7 @@ resource "azurerm_linux_function_app" "main" {
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
     "SCM_DO_BUILD_DURING_DEPLOYMENT"             = "true"
     "ENABLE_ORYX_BUILD"                          = "true"
-    "WEBSITE_RUN_FROM_PACKAGE"                   = "1"
+    "WEBSITE_RUN_FROM_PACKAGE"                   = "0" # Changed to "0" to disable run-from-package mode
   }
 
   # ZIPファイルからのデプロイ
