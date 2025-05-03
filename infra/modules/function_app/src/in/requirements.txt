@@ -1,1 +1,2 @@
+azure-communication-email
 azure-functions
