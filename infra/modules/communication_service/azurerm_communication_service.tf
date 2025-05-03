@@ -1,6 +1,6 @@
 # Azure Communication Services
-resource "azurerm_communication_service" "example" {
+resource "azurerm_communication_service" "main" {
   name                = "notification-communication-service"
-  resource_group_name = azurerm_resource_group.example.name
+  resource_group_name = var.resource_group.name
   data_location       = "Japan"
 }

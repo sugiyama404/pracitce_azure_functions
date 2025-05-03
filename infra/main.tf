@@ -31,34 +31,24 @@ module "resource_providers" {
   ]
 }
 
-# Log Analytics Module
-module "log_analytics" {
-  source         = "./modules/log_analytics"
+# Storage Account
+module "storage" {
+  source         = "./modules/azurerm_storage"
   resource_group = azurerm_resource_group.resource_group
 }
 
-# Container Registry Module
-module "container_registry" {
-  source         = "./modules/container_registry"
+# Communication Service
+module "communication_service" {
+  source         = "./modules/communication_service"
   resource_group = azurerm_resource_group.resource_group
 }
 
-# Bash
-module "bash" {
-  source                = "./modules/bash"
-  image_name            = var.image_name
-  registry_name         = module.container_registry.registry_name
-  registry_login_server = module.container_registry.registry_login_server
-}
-
-# Container App Module
-module "container_app" {
-  source                     = "./modules/container_app"
-  resource_group             = azurerm_resource_group.resource_group
-  log-analytics-workspace-id = module.log_analytics.log-analytics-workspace-id
-  registry_login_server      = module.container_registry.registry_login_server
-  registry_admin_username    = module.container_registry.registry_admin_username
-  registry_admin_password    = module.container_registry.registry_admin_password
-  registry_name              = module.container_registry.registry_name
-  image_name                 = var.image_name
+# Function App
+module "function_app" {
+  source                                               = "./modules/function_app"
+  resource_group                                       = azurerm_resource_group.resource_group
+  storage_main_account_name                            = module.storage.storage_main_account_name
+  storage_main_account_access_key                      = module.storage.storage_main_account_access_key
+  storage_account_main_primary_connection_string       = module.storage.storage_account_main_primary_connection_string
+  communication_service_main_primary_connection_string = module.communication_service.communication_service_main_primary_connection_string
 }

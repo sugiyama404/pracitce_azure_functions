@@ -1,11 +1,11 @@
 # Function App
 resource "azurerm_linux_function_app" "example" {
   name                       = "notification-function"
-  resource_group_name        = azurerm_resource_group.example.name
-  location                   = azurerm_resource_group.example.location
+  location                   = var.resource_group.location
+  resource_group_name        = var.resource_group.name
   service_plan_id            = azurerm_service_plan.example.id
-  storage_account_name       = azurerm_storage_account.example.name
-  storage_account_access_key = azurerm_storage_account.example.primary_access_key
+  storage_account_name       = var.storage_main_account_name
+  storage_account_access_key = var.storage_main_account_access_key
 
   site_config {
     application_stack {
@@ -15,8 +15,8 @@ resource "azurerm_linux_function_app" "example" {
 
   app_settings = {
     "FUNCTIONS_WORKER_RUNTIME"                 = "python"
-    "AzureWebJobsStorage"                      = azurerm_storage_account.example.primary_connection_string
-    "COMMUNICATION_SERVICES_CONNECTION_STRING" = azurerm_communication_service.example.primary_connection_string
+    "AzureWebJobsStorage"                      = var.storage_account_main_primary_connection_string
+    "COMMUNICATION_SERVICES_CONNECTION_STRING" = var.communication_service_main_primary_connection_string
   }
 
   # ZIPファイルからのデプロイ
@@ -26,5 +26,5 @@ resource "azurerm_linux_function_app" "example" {
 data "archive_file" "function_payload" {
   type        = "zip"
   source_dir  = "${path.module}/src/in"
-  output_path = "${path.module}/src/out/lambda_function_payload.zip"
+  output_path = "${path.module}/src/out/function_payload.zip"
 }
