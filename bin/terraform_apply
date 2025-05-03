@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+function terraform_apply() {
+  local cwd="$1"
+  cd "${cwd}"
+  cd infra
+
+  terraform init
+  terraform plan -var-file=envs/dev.tfvars
+  terraform apply --auto-approve -var-file=envs/dev.tfvars
+}
+
+function stop_watch() {
+  local cwd="$1"
+  cd "${cwd}"
+  local start_time="$2"
+  current_time=$(date +%s)
+  elapsed_time=$((current_time - start_time))
+  end_time=$((start_time + elapsed_time))
+  elapsed_time_in_minutes=$((elapsed_time / 60))
+  elapsed_time_remaining=$((elapsed_time % 60))
+
+  echo "処理時間: $elapsed_time_in_minutes 分 $elapsed_time_remaining 秒"
+  echo "処理終了時刻: $(date -r $end_time +'%Y/%m/%d %H:%M:%S')"
+}
+
+function main() {
+  local cwd
+  local start_time
+  cwd="$(cd "$(dirname "$0")/.." && pwd)"
+  start_time=$(date +%s)
+  terraform_apply "${cwd}"
+  stop_watch "${cwd}" "${start_time}"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

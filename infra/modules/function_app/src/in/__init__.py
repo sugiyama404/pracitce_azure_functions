@@ -1,0 +1,92 @@
+import logging
+import azure.functions as func
+import os
+import json
+from azure.communication.email import EmailClient
+
+def main(req: func.HttpRequest) -> func.HttpResponse:
+    """
+    Azure Functionsのトリガーから通知サービスを実行するエントリーポイント
+    HTTP POSTリクエストを受け取り、Azure Communication Servicesを使用して通知を送信
+    """
+    logging.info('HTTP通知トリガー関数が実行されました')
+
+    try:
+        # リクエストデータの取得
+        req_body = req.get_json()
+
+        # 必須パラメータの検証
+        to_email = req_body.get('to_email')
+        if not to_email:
+            return func.HttpResponse(
+                json.dumps({"error": "宛先メールアドレス(to_email)が必要です"}),
+                status_code=400,
+                mimetype="application/json"
+            )
+
+        # オプションパラメータの取得（デフォルト値あり）
+        subject = req_body.get('subject', '自動通知')
+        message = req_body.get('message', 'これは自動通知メッセージです。')
+        sender = req_body.get('sender', 'DoNotReply@yourdomain.com')
+
+        # Azure Communication Servicesのクライアント初期化
+        connection_string = os.environ["COMMUNICATION_SERVICES_CONNECTION_STRING"]
+        client = EmailClient.from_connection_string(connection_string)
+
+        # メール送信リクエストの作成
+        email_message = {
+            "senderAddress": sender,
+            "recipients": {
+                "to": [{"address": to_email}]
+            },
+            "content": {
+                "subject": subject,
+                "plainText": message,
+                "html": f"<html><body><h1>{subject}</h1><p>{message}</p></body></html>"
+            }
+        }
+
+        # CC受信者がある場合
+        cc_recipients = req_body.get('cc', [])
+        if cc_recipients:
+            email_message["recipients"]["cc"] = [{"address": addr} for addr in cc_recipients]
+
+        # BCC受信者がある場合
+        bcc_recipients = req_body.get('bcc', [])
+        if bcc_recipients:
+            email_message["recipients"]["bcc"] = [{"address": addr} for addr in bcc_recipients]
+
+        # メール送信を開始（非同期操作）
+        poller = client.begin_send(email_message)
+
+        # 操作完了を待ち、結果を取得
+        result = poller.result()
+
+        # 成功レスポンスを返す
+        return func.HttpResponse(
+            json.dumps({
+                "status": "success",
+                "message": "メールが正常に送信されました",
+                "message_id": result.message_id
+            }),
+            status_code=200,
+            mimetype="application/json"
+        )
+
+    except ValueError as ve:
+        # JSONパース失敗などのエラー
+        logging.error(f"リクエスト処理エラー: {str(ve)}")
+        return func.HttpResponse(
+            json.dumps({"error": f"無効なリクエスト形式: {str(ve)}"}),
+            status_code=400,
+            mimetype="application/json"
+        )
+
+    except Exception as e:
+        # その他の一般的なエラー
+        logging.error(f"通知送信エラー: {str(e)}")
+        return func.HttpResponse(
+            json.dumps({"error": f"通知処理中にエラーが発生しました: {str(e)}"}),
+            status_code=500,
+            mimetype="application/json"
+        )

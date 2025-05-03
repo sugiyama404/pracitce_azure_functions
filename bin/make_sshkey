@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+function make_sshkey() {
+  local cwd="$1"
+  local filename="$2"
+
+  cd "${cwd}"
+
+  ssh-keygen -t rsa -b 2048 -N "" -f "${filename}" || exit 1
+
+  if [ -f "${filename}" ]; then
+    move_keypair_file "${filename}"
+  fi
+}
+
+function move_keypair_file() {
+  local filename="$1"
+
+  mv "${filename}" "${filename}.pem"
+  echo "秘密鍵ファイル '${filename}' の拡張子を '.pem' に変更しました。"
+}
+
+function main() {
+  local cwd
+  cwd="$(cd "$(dirname "$0")/../infra/modules/vm/src" && pwd)"
+
+  make_sshkey "${cwd}" "keypair" || exit 1
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

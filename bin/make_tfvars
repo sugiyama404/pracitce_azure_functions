@@ -1,0 +1,32 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+function make_tfvars() {
+  local -r cwd="$1"
+  local -r infra_dir="${cwd}/infra/envs"
+
+  mkdir -p "${infra_dir}"
+
+  # 環境リスト
+  local -r environments=("dev" "prod" "staging")
+
+  for environment in "${environments[@]}"; do
+    local tfvars_file="${infra_dir}/${environment}.tfvars"
+    if [[ ! -f "${tfvars_file}" ]]; then
+      touch "${tfvars_file}"
+      echo "Created: ${tfvars_file}"
+    else
+      echo "Exists: ${tfvars_file}"
+    fi
+  done
+}
+
+function main() {
+  local -r cwd="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+  make_tfvars "${cwd}"
+}
+
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi
