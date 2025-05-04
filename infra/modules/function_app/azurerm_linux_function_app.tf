@@ -31,8 +31,6 @@ resource "azurerm_linux_function_app" "main" {
     "APPINSIGHTS_INSTRUMENTATIONKEY"             = azurerm_application_insights.function_insights.instrumentation_key
     "APPLICATIONINSIGHTS_CONNECTION_STRING"      = azurerm_application_insights.function_insights.connection_string
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
-    "SCM_DO_BUILD_DURING_DEPLOYMENT"             = "true"
-    "ENABLE_ORYX_BUILD"                          = "true"
   }
 
   # ZIPファイルからのデプロイ
