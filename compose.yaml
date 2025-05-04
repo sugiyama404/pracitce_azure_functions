@@ -1,0 +1,10 @@
+services:
+  apserver:
+    build:
+      context: ./apserver/opt
+      dockerfile: Dockerfile
+    working_dir: /app/opt
+    volumes:
+      - ./apserver:/app
+    tty: true
+    command: python main.py

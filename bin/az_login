@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+function az_login() {
+  az login
+}
+
+# メインの処理
+function main() {
+  az_login
+}
+
+# スクリプトが直接実行された場合にメイン関数を呼び出す
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi

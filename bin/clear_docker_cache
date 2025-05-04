@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+# Dockerの不要なキャッシュをクリアする関数
+function clear_docker_cache() {
+  echo "Dockerの不要なキャッシュをクリアしています..."
+  docker system prune -a --volumes -f
+  docker builder prune -f
+  echo "キャッシュのクリアが完了しました。"
+}
+
+# メインの処理
+function main() {
+  # Dockerキャッシュのクリア
+  clear_docker_cache
+}
+
+# スクリプトが直接実行された場合にメイン関数を呼び出す
+if [[ "${BASH_SOURCE[0]}" == "${0}" ]]; then
+  main "$@"
+fi
