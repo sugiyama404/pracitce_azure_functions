@@ -2,59 +2,18 @@ import logging
 import azure.functions as func
 import os
 import json
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.utils import formataddr
+from azure.communication.email import EmailClient
 
 def main(req: func.HttpRequest) -> func.HttpResponse:
     """
     Azure Functionsのトリガーから通知サービスを実行するエントリーポイント
-    HTTP POSTリクエストを受け取り、標準ライブラリを使用して通知を送信
+    HTTP POSTリクエストを受け取り、Azure Communication Servicesを使用して通知を送信
     """
     logging.info('HTTP通知トリガー関数が実行されました')
 
     try:
-        # Content-Typeの確認
-        content_type = req.headers.get('Content-Type', '')
-        if 'application/json' not in content_type and req.method == 'POST':
-            logging.warning(f"不正なContent-Type: {content_type}")
-            return func.HttpResponse(
-                json.dumps({"error": "Content-Typeはapplication/jsonである必要があります"}),
-                status_code=415,
-                mimetype="application/json"
-            )
-
-        # リクエストボディの取得
-        req_body_raw = req.get_body()
-
-        # リクエストボディがあるか確認
-        if not req_body_raw:
-            return func.HttpResponse(
-                json.dumps({"error": "リクエストボディが必要です"}),
-                status_code=400,
-                mimetype="application/json"
-            )
-
-        # JSONデータのパース
-        try:
-            req_body_str = req_body_raw.decode("utf-8")
-            logging.info(f"受信したリクエストボディ: {req_body_str}")
-            req_body = json.loads(req_body_str)
-        except UnicodeDecodeError as e:
-            logging.error(f"UTF-8デコードエラー: {str(e)}")
-            return func.HttpResponse(
-                json.dumps({"error": "リクエストボディはUTF-8エンコードされている必要があります"}),
-                status_code=400,
-                mimetype="application/json"
-            )
-        except ValueError as e:
-            logging.error(f"JSON解析エラー: {str(e)}, ボディ: {req_body_raw}")
-            return func.HttpResponse(
-                json.dumps({"error": "リクエストボディは有効なJSON形式である必要があります"}),
-                status_code=400,
-                mimetype="application/json"
-            )
+        # リクエストデータの取得
+        req_body = req.get_json()
 
         # 必須パラメータの検証
         to_email = req_body.get('to_email')
@@ -70,44 +29,46 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         message = req_body.get('message', 'これは自動通知メッセージです。')
         sender = req_body.get('sender', 'DoNotReply@yourdomain.com')
 
-        # SMTPサーバー設定を環境変数から取得
-        smtp_server = os.environ.get("SMTP_SERVER", "smtp.example.com")
-        smtp_port = int(os.environ.get("SMTP_PORT", "587"))
-        smtp_username = os.environ.get("SMTP_USERNAME", "")
-        smtp_password = os.environ.get("SMTP_PASSWORD", "")
+        # Azure Communication Servicesのクライアント初期化
+        connection_string = os.environ["COMMUNICATION_SERVICES_CONNECTION_STRING"]
+        client = EmailClient.from_connection_string(connection_string)
 
-        # メールメッセージの作成
-        email_message = MIMEMultipart("alternative")
-        email_message["Subject"] = subject
-        email_message["From"] = formataddr(("Notification Service", sender))
-        email_message["To"] = to_email
+        # メール送信リクエストの作成
+        email_message = {
+            "senderAddress": sender,
+            "recipients": {
+                "to": [{"address": to_email}]
+            },
+            "content": {
+                "subject": subject,
+                "plainText": message,
+                "html": f"<html><body><h1>{subject}</h1><p>{message}</p></body></html>"
+            }
+        }
 
-        # プレーンテキスト版
-        plain_part = MIMEText(message, "plain")
-        email_message.attach(plain_part)
+        # メール送信を開始（非同期操作）
+        poller = client.begin_send(email_message)
 
-        # HTML版
-        html_content = f"<html><body><h1>{subject}</h1><p>{message}</p></body></html>"
-        html_part = MIMEText(html_content, "html")
-        email_message.attach(html_part)
-
-        # SMTPサーバーに接続してメール送信
-        with smtplib.SMTP(smtp_server, smtp_port) as server:
-            server.ehlo()
-            server.starttls()  # Transport Layer Security
-            server.login(smtp_username, smtp_password)
-            server.send_message(email_message)
-
-        message_id = email_message.get("Message-ID", "unknown")
+        # 操作完了を待ち、結果を取得
+        result = poller.result()
 
         # 成功レスポンスを返す
         return func.HttpResponse(
             json.dumps({
                 "status": "success",
                 "message": "メールが正常に送信されました",
-                "message_id": message_id
+                "message_id": result.message_id
             }),
             status_code=200,
+            mimetype="application/json"
+        )
+
+    except ValueError as ve:
+        # JSONパース失敗などのエラー
+        logging.error(f"リクエスト処理エラー: {str(ve)}")
+        return func.HttpResponse(
+            json.dumps({"error": f"無効なリクエスト形式: {str(ve)}"}),
+            status_code=400,
             mimetype="application/json"
         )
 
