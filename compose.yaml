@@ -1,8 +1,9 @@
 services:
   apserver:
     build:
-      context: ./apserver
+      context: ./apserver/opt
       dockerfile: Dockerfile
+    working_dir: /app/opt
     volumes:
       - ./apserver:/app
     tty: true
