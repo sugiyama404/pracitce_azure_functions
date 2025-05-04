@@ -31,6 +31,7 @@ resource "azurerm_linux_function_app" "main" {
     "APPINSIGHTS_INSTRUMENTATIONKEY"             = azurerm_application_insights.function_insights.instrumentation_key
     "APPLICATIONINSIGHTS_CONNECTION_STRING"      = azurerm_application_insights.function_insights.connection_string
     "ApplicationInsightsAgent_EXTENSION_VERSION" = "~3"
+    "ACS_SENDER_EMAIL"                           = "donotreply@notification-communication-service.japaneast.azurecomm.net"
   }
 
   # ZIPファイルからのデプロイ

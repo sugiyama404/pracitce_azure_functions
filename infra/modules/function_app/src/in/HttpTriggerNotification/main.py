@@ -27,15 +27,17 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         # オプションパラメータの取得（デフォルト値あり）
         subject = req_body.get('subject', '自動通知')
         message = req_body.get('message', 'これは自動通知メッセージです。')
-        sender = req_body.get('sender', 'DoNotReply@yourdomain.com')
 
         # Azure Communication Servicesのクライアント初期化
         connection_string = os.environ["COMMUNICATION_SERVICES_CONNECTION_STRING"]
         client = EmailClient.from_connection_string(connection_string)
 
+        # ACS提供の検証済みドメインを使用（sender_emailはACSアカウント作成時に提供される）
+        sender_email = os.environ.get("ACS_SENDER_EMAIL", "donotreply@notification-communication-service.japaneast.azurecomm.net")
+
         # メール送信リクエストの作成
         email_message = {
-            "senderAddress": sender,
+            "senderAddress": sender_email,
             "recipients": {
                 "to": [{"address": to_email}]
             },
@@ -56,8 +58,7 @@ def main(req: func.HttpRequest) -> func.HttpResponse:
         return func.HttpResponse(
             json.dumps({
                 "status": "success",
-                "message": "メールが正常に送信されました",
-                "message_id": result.message_id
+                "message": "メールが正常に送信されました"
             }),
             status_code=200,
             mimetype="application/json"
